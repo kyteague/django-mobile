@@ -1,11 +1,15 @@
 import re
+
 from django_mobile import flavour_storage
 from django_mobile import set_flavour, _init_flavour
 from django_mobile.conf import settings
 
 
-class SetFlavourMiddleware(object):
-    def process_request(self, request):
+class SetFlavourMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         _init_flavour(request)
 
         if settings.FLAVOURS_GET_PARAMETER in request.GET:
@@ -13,12 +17,13 @@ class SetFlavourMiddleware(object):
             if flavour in settings.FLAVOURS:
                 set_flavour(flavour, request, permanent=True)
 
-    def process_response(self, request, response):
+        response = self.get_response(request)
+
         flavour_storage.save(request, response)
         return response
 
 
-class MobileDetectionMiddleware(object):
+class MobileDetectionMiddleware:
     user_agents_test_match = (
         "w3c ", "acs-", "alav", "alca", "amoi", "audi",
         "avan", "benq", "bird", "blac", "blaz", "brew",
@@ -44,7 +49,8 @@ class MobileDetectionMiddleware(object):
     ))
     http_accept_regex = re.compile("application/vnd\.wap\.xhtml\+xml", re.IGNORECASE)
 
-    def __init__(self):
+    def __init__(self, get_response):
+        self.get_response = get_response
         user_agents_test_match = r'^(?:%s)' % '|'.join(self.user_agents_test_match)
         self.user_agents_test_match_regex = re.compile(user_agents_test_match, re.IGNORECASE)
         self.user_agents_test_search_regex = re.compile(self.user_agents_test_search, re.IGNORECASE)
@@ -78,3 +84,5 @@ class MobileDetectionMiddleware(object):
             set_flavour(settings.DEFAULT_MOBILE_FLAVOUR, request)
         else:
             set_flavour(settings.FLAVOURS[0], request)
+
+        return self.get_response(request)
