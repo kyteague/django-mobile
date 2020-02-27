@@ -56,7 +56,7 @@ class MobileDetectionMiddleware:
         self.user_agents_test_search_regex = re.compile(self.user_agents_test_search, re.IGNORECASE)
         self.user_agents_exception_search_regex = re.compile(self.user_agents_exception_search, re.IGNORECASE)
 
-    def process_request(self, request):
+    def __call__(self, request):
         is_mobile = False
 
         if 'HTTP_USER_AGENT' in request.META :
